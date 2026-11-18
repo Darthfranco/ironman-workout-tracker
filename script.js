@@ -251,7 +251,12 @@ function renderLogMovements() {
             </div>
             <div class="set-grid set-labels"><span>Set</span><span>Weight</span><span>Reps</span><span></span></div>
             <div id="sets-box-${mIdx}" class="sets"></div>
-            <button onclick="addSetToLog(${mIdx})" class="btn btn-gold"><i data-lucide="plus"></i>Add Set</button>
+            <div class="move-foot">
+                <button onclick="addSetToLog(${mIdx})" class="btn btn-gold"><i data-lucide="plus"></i>Add Set</button>
+                <div id="side-${mIdx}" class="seg side-toggle" role="group" aria-label="Side done first">
+                    ${sideButtons(mIdx, mov.firstSide)}
+                </div>
+            </div>
         </section>
     `).join('');
     currentLogSession.movements.forEach((mov, mIdx) => renderSetRows(mIdx));
@@ -285,6 +290,20 @@ function addSetToLog(mIdx) {
 function removeSetFromLog(mIdx, sIdx) {
     currentLogSession.movements[mIdx].lastSets.splice(sIdx, 1);
     save(); renderSetRows(mIdx);
+}
+
+// Which side was done first: 'L', 'R', or '' (neutral, the default)
+function sideButtons(mIdx, firstSide = '') {
+    return [['L', 'L', 'Left first'], ['', '<i data-lucide="minus"></i>', 'No side'], ['R', 'R', 'Right first']]
+        .map(([side, label, name]) => `<button onclick="setFirstSide(${mIdx}, '${side}')" class="${(firstSide || '') === side ? 'is-on' : ''}" aria-pressed="${(firstSide || '') === side}" aria-label="${name}">${label}</button>`)
+        .join('');
+}
+
+function setFirstSide(mIdx, side) {
+    currentLogSession.movements[mIdx].firstSide = side;
+    save();
+    document.getElementById(`side-${mIdx}`).innerHTML = sideButtons(mIdx, side);
+    lucide.createIcons();
 }
 
 function toggleUnit(mIdx, unit) {
@@ -321,7 +340,7 @@ function renderHistory() {
             <div class="hist-move">
                 <div class="hist-move-head">
                     <span class="hist-move-name">${esc(m.name)}</span>
-                    <span class="hist-unit">${esc(m.unit).toUpperCase()}</span>
+                    <span class="hist-unit">${m.firstSide ? `${esc(m.firstSide)} first · ` : ''}${esc(m.unit).toUpperCase()}</span>
                 </div>
                 ${m.lastSets.map((s, i) => `
                     <div class="hist-set">
