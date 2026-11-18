@@ -88,27 +88,38 @@ function playEasterEgg() {
     easterEggAudio.play();
 }
 
+// Escape user-typed text before putting it into HTML (names with quotes or < would break the page)
+function esc(value) {
+    return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Sheets, the photo viewer: fade/slide in and out (timing lives in styles.css)
+function openLayer(id) {
+    const el = document.getElementById(id);
+    clearTimeout(el._hideTimer);
+    el.classList.remove('hidden');
+    void el.offsetWidth; // draw the closed state first so the opening animates
+    el.classList.add('is-open');
+}
+
+function closeLayer(id) {
+    const el = document.getElementById(id);
+    el.classList.remove('is-open');
+    el._hideTimer = setTimeout(() => el.classList.add('hidden'), 200);
+}
+
 function showView(viewId) {
     ['home', 'log', 'stats', 'progress'].forEach(v => document.getElementById(`view-${v}`).classList.add('hidden'));
     document.getElementById(`view-${viewId}`).classList.remove('hidden');
+    window.scrollTo(0, 0);
 
-    // Hide navbar when in logger view
-    const nav = document.getElementById('main-nav');
-    if (viewId === 'log') {
-        nav.classList.add('hidden');
-    } else {
-        nav.classList.remove('hidden');
-    }
+    // Hide the tab bar while logging a workout
+    document.getElementById('bottom-bar').classList.toggle('hidden', viewId === 'log');
 
-    document.querySelectorAll('nav button').forEach(b => {
-        b.classList.remove('tab-active');
-        b.classList.add('text-amber-600');
-    });
+    document.querySelectorAll('#main-nav .tab').forEach(b => b.classList.remove('is-active'));
     const navBtn = document.getElementById(`nav-${viewId}`);
-    if (navBtn) {
-        navBtn.classList.add('tab-active');
-        navBtn.classList.remove('text-amber-600');
-    }
+    if (navBtn) navBtn.classList.add('is-active');
+
     if (viewId === 'home') renderHome();
     if (viewId === 'stats') renderHistory();
     if (viewId === 'progress') renderProgressPhotos(); // async, renders when ready
@@ -131,27 +142,24 @@ function openWorkoutModal(id = null) {
         editorMovements = [{ name: '' }];
     }
     renderEditorRows();
-    document.getElementById('modal-workout').classList.remove('hidden');
+    openLayer('modal-workout');
 }
 
-function closeWorkoutModal() { document.getElementById('modal-workout').classList.add('hidden'); }
+function closeWorkoutModal() { closeLayer('modal-workout'); }
 
 function renderEditorRows() {
     const container = document.getElementById('movementInputsContainer');
-    container.innerHTML = '';
-    editorMovements.forEach((mov, idx) => {
-        const div = document.createElement('div');
-        div.className = "flex gap-2 items-center animate-in";
-        div.innerHTML = `
-            <div class="flex flex-col">
-                <button onclick="moveMov(${idx}, -1)" class="p-1 text-slate-600 ${idx === 0 ? 'opacity-0' : ''}" ${idx === 0 ? 'disabled' : ''}><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
-                <button onclick="moveMov(${idx}, 1)" class="p-1 text-slate-600 ${idx === editorMovements.length - 1 ? 'opacity-0' : ''}" ${idx === editorMovements.length - 1 ? 'disabled' : ''}><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+    const last = editorMovements.length - 1;
+    container.innerHTML = editorMovements.map((mov, idx) => `
+        <div class="movement-row">
+            <div class="reorder">
+                <button onclick="moveMov(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} aria-label="Move up"><i data-lucide="chevron-up"></i></button>
+                <button onclick="moveMov(${idx}, 1)" ${idx === last ? 'disabled' : ''} aria-label="Move down"><i data-lucide="chevron-down"></i></button>
             </div>
-            <input type="text" value="${mov.name}" oninput="editorMovements[${idx}].name = this.value" placeholder="Movement" class="flex-1 bg-neutral-900 border border-white/5 rounded-xl p-3 outline-none focus:border-red-500 text-base font-500">
-            <button onclick="removeEditorRow(${idx})" class="p-2 text-slate-700 hover:text-red-400"><i data-lucide="x-circle" class="w-5 h-5"></i></button>
-        `;
-        container.appendChild(div);
-    });
+            <input type="text" class="text-field" value="${esc(mov.name)}" oninput="editorMovements[${idx}].name = this.value" placeholder="Movement">
+            <button onclick="removeEditorRow(${idx})" class="x-btn" aria-label="Remove movement"><i data-lucide="x"></i></button>
+        </div>
+    `).join('');
     lucide.createIcons();
 }
 
@@ -194,24 +202,22 @@ function handleWorkoutSave() {
 // --- HOME SCREEN ---
 function renderHome() {
     const container = document.getElementById('workoutList');
-    container.innerHTML = db.workouts.length ? '' : `<div class="text-center py-20 text-slate-700 font-500">No workouts yet.</div>`;
-    db.workouts.forEach(w => {
+    container.innerHTML = db.workouts.length ? db.workouts.map(w => {
         const lastEntry = db.history.find(h => h.templateId === w.id);
-        const dateLabel = lastEntry ? `• Last: ${lastEntry.date}` : '• New';
-
-        const div = document.createElement('div');
-        div.className = "glass p-5 rounded-[2.5rem] flex justify-between items-center animate-in";
-        div.innerHTML = `
-            <div onclick="openLogger(${w.id})" class="flex-1 cursor-pointer">
-                <h3 class="font-800 text-xl text-red-500">${w.name}</h3>
-                <p class="text-xs font-black text-slate-500 uppercase mt-1 tracking-wider">${w.movements.length} Movements ${dateLabel}</p>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="event.stopPropagation(); openWorkoutModal(${w.id})" class="p-3 bg-white/5 rounded-2xl text-slate-500"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                <button onclick="event.stopPropagation(); deleteWorkout(${w.id})" class="p-3 bg-white/5 rounded-2xl text-slate-500 hover:text-red-400 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        const count = w.movements.length;
+        const sub = `${count} movement${count === 1 ? '' : 's'} · ${lastEntry ? `Last: ${esc(lastEntry.date)}` : 'New'}`;
+        return `
+            <div class="card workout-card">
+                <button class="workout-open" onclick="openLogger(${w.id})">
+                    <span class="card-title"><span class="name">${esc(w.name)}</span><i data-lucide="chevron-right"></i></span>
+                    <span class="card-sub">${sub}</span>
+                </button>
+                <div class="card-actions">
+                    <button class="icon-btn" onclick="openWorkoutModal(${w.id})" aria-label="Edit workout"><i data-lucide="pencil"></i></button>
+                    <button class="icon-btn" onclick="deleteWorkout(${w.id})" aria-label="Delete workout"><i data-lucide="trash-2"></i></button>
+                </div>
             </div>`;
-        container.appendChild(div);
-    });
+    }).join('') : `<div class="empty">No workouts yet.</div>`;
     lucide.createIcons();
 }
 
@@ -234,37 +240,32 @@ function openLogger(id) {
 
 function renderLogMovements() {
     const container = document.getElementById('movementLogs');
-    container.innerHTML = '';
-    currentLogSession.movements.forEach((mov, mIdx) => {
-        const div = document.createElement('div');
-        div.className = "glass p-6 rounded-[2.5rem] space-y-4 animate-in";
-        div.innerHTML = `
-            <div class="flex justify-between items-center">
-                <h4 class="font-800 text-lg text-red-500 truncate">${mov.name}</h4>
-                <div class="flex glass-bright rounded-xl p-1">
-                    <button onclick="toggleUnit(${mIdx}, 'kg')" class="px-3 py-1 rounded-lg text-xs font-black ${mov.unit === 'kg' ? 'bg-red-600' : 'text-slate-500'}">KG</button>
-                    <button onclick="toggleUnit(${mIdx}, 'lbs')" class="px-3 py-1 rounded-lg text-xs font-black ${mov.unit === 'lbs' ? 'bg-red-600' : 'text-slate-500'}">LBS</button>
+    container.innerHTML = currentLogSession.movements.map((mov, mIdx) => `
+        <section class="card move-card">
+            <div class="move-head">
+                <h2 class="move-name">${esc(mov.name)}</h2>
+                <div class="seg">
+                    <button onclick="toggleUnit(${mIdx}, 'kg')" class="${mov.unit === 'kg' ? 'is-on' : ''}">KG</button>
+                    <button onclick="toggleUnit(${mIdx}, 'lbs')" class="${mov.unit === 'lbs' ? 'is-on' : ''}">LBS</button>
                 </div>
             </div>
-            <div id="sets-box-${mIdx}" class="space-y-3"></div>
-            <button onclick="addSetToLog(${mIdx})" class="w-full py-3 rounded-xl border border-dashed border-white/5 text-slate-600 text-xs font-black uppercase">+ Add Set</button>
-        `;
-        container.appendChild(div);
-        renderSetRows(mIdx);
-    });
+            <div class="set-grid set-labels"><span>Set</span><span>Weight</span><span>Reps</span><span></span></div>
+            <div id="sets-box-${mIdx}" class="sets"></div>
+            <button onclick="addSetToLog(${mIdx})" class="btn btn-gold"><i data-lucide="plus"></i>Add Set</button>
+        </section>
+    `).join('');
+    currentLogSession.movements.forEach((mov, mIdx) => renderSetRows(mIdx));
 }
 
 function renderSetRows(mIdx) {
     const container = document.getElementById(`sets-box-${mIdx}`);
     const mov = currentLogSession.movements[mIdx];
     container.innerHTML = mov.lastSets.map((s, sIdx) => `
-        <div class="flex items-center gap-3">
-            <span class="w-4 text-xs font-black text-slate-700">${sIdx + 1}</span>
-            <div class="flex-1 grid grid-cols-2 gap-3">
-                <input type="number" step="any" value="${s.weight}" oninput="liveUpdate(${mIdx},${sIdx},'weight',this.value)" placeholder="Wt (${mov.unit})" class="w-full border border-white/5 rounded-2xl p-4 text-center text-base font-700 outline-none focus:border-red-500">
-                <input type="number" value="${s.reps}" oninput="liveUpdate(${mIdx},${sIdx},'reps',this.value)" placeholder="Reps" class="w-full border border-white/5 rounded-2xl p-4 text-center text-base font-700 outline-none focus:border-red-500">
-            </div>
-            <button onclick="removeSetFromLog(${mIdx}, ${sIdx})" class="p-2 text-slate-800"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <div class="set-grid">
+            <span class="set-num">${sIdx + 1}</span>
+            <input type="number" inputmode="decimal" step="any" value="${esc(s.weight)}" oninput="liveUpdate(${mIdx},${sIdx},'weight',this.value)" placeholder="–" class="num-field" aria-label="Set ${sIdx + 1} weight (${mov.unit})">
+            <input type="number" inputmode="numeric" value="${esc(s.reps)}" oninput="liveUpdate(${mIdx},${sIdx},'reps',this.value)" placeholder="–" class="num-field" aria-label="Set ${sIdx + 1} reps">
+            <button onclick="removeSetFromLog(${mIdx}, ${sIdx})" class="x-btn" aria-label="Remove set ${sIdx + 1}"><i data-lucide="x"></i></button>
         </div>
     `).join('');
     lucide.createIcons();
@@ -312,48 +313,44 @@ function finishSession() {
 // --- HISTORY VAULT (REPLACED CHART) ---
 function renderHistory() {
     const container = document.getElementById('historyList');
-    document.getElementById('historyCount').innerText = `${db.history.length} Logs`;
-    container.innerHTML = db.history.length ? '' : `<div class="text-center py-20 text-slate-700 font-500">No session history found.</div>`;
+    const count = db.history.length;
+    document.getElementById('historyCount').innerText = `${count} log${count === 1 ? '' : 's'}`;
 
-    db.history.forEach((session, sIdx) => {
-        const card = document.createElement('div');
-        card.className = "history-card glass rounded-[2rem] overflow-hidden";
-        card.id = `history-${session.id}`;
-
-        let movementSummary = session.movements.map(m => `
-            <div class="mb-4">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-sm font-800 text-amber-400 uppercase tracking-wider">${m.name}</span>
-                    <span class="text-xs font-black text-slate-600 uppercase tracking-widest">${m.unit}</span>
+    container.innerHTML = count ? db.history.map(session => {
+        const movements = session.movements.map(m => `
+            <div class="hist-move">
+                <div class="hist-move-head">
+                    <span class="hist-move-name">${esc(m.name)}</span>
+                    <span class="hist-unit">${esc(m.unit).toUpperCase()}</span>
                 </div>
-                <div class="grid grid-cols-1 gap-1">
-                    ${m.lastSets.map((s, i) => `
-                        <div class="flex justify-between items-center bg-white/5 p-2 rounded-xl text-sm font-bold">
-                            <span class="text-slate-500">Set ${i + 1}</span>
-                            <span>${s.weight || 0} ${m.unit} <span class="text-slate-600 ml-1">×</span> ${s.reps || 0}</span>
-                        </div>
-                    `).join('')}
-                </div>
+                ${m.lastSets.map((s, i) => `
+                    <div class="hist-set">
+                        <span>Set ${i + 1}</span>
+                        <span>${esc(s.weight || 0)} ${esc(m.unit)} × ${esc(s.reps || 0)}</span>
+                    </div>
+                `).join('')}
             </div>
         `).join('');
 
-        card.innerHTML = `
-            <div onclick="toggleHistoryCard('${session.id}')" class="p-5 flex justify-between items-center cursor-pointer active:bg-white/5 transition-colors">
-                <div>
-                    <h3 class="font-800 text-base tracking-tight text-amber-100">${session.workoutName}</h3>
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-0.5">${session.date}</p>
+        return `
+            <div id="history-${session.id}" class="card history-card">
+                <button class="hist-toggle" onclick="toggleHistoryCard('${session.id}')">
+                    <span>
+                        <span class="hist-title">${esc(session.workoutName)}</span>
+                        <span class="card-sub hist-date">${esc(session.date)}</span>
+                    </span>
+                    <i data-lucide="chevron-down" class="chev"></i>
+                </button>
+                <div class="hist-body">
+                    <div class="hist-inner">
+                        <div class="hist-content">
+                            ${movements}
+                            <button class="danger-link" onclick="deleteHistoryEntry(${session.id})">Delete Log</button>
+                        </div>
+                    </div>
                 </div>
-                <i data-lucide="chevron-down" class="chevron-icon w-5 h-5 text-slate-600 transition-transform"></i>
-            </div>
-            <div class="expanded-content bg-black/20">
-                <div class="p-5 pt-0 border-t border-white/5 mt-2">
-                    ${movementSummary}
-                    <button onclick="event.stopPropagation(); deleteHistoryEntry(${session.id})" class="w-full mt-4 py-3 text-xs font-black text-red-500/50 uppercase tracking-widest hover:text-red-500 transition-colors">Delete Log</button>
-                </div>
-            </div>
-        `;
-        container.appendChild(card);
-    });
+            </div>`;
+    }).join('') : `<div class="empty">No session history yet.</div>`;
     lucide.createIcons();
 }
 
@@ -385,12 +382,11 @@ function openPhotoUpload() {
     document.getElementById('photoDateInput').value = new Date().toISOString().split('T')[0];
     document.getElementById('photoPreviewContainer').classList.add('hidden');
     document.getElementById('photoFileInput').value = '';
-    document.getElementById('modal-photo-upload').classList.remove('hidden');
-    lucide.createIcons();
+    openLayer('modal-photo-upload');
 }
 
 function closePhotoUpload() {
-    document.getElementById('modal-photo-upload').classList.add('hidden');
+    closeLayer('modal-photo-upload');
     pendingPhotoData = null;
 }
 
@@ -466,28 +462,18 @@ async function renderProgressPhotos() {
     cachedPhotos = photos; // Update cache for viewer
 
     const container = document.getElementById('progressList');
-    container.innerHTML = photos.length ? '' : `<div class="text-center py-20 text-slate-700 font-500">No progress photos yet.</div>`;
-
-    photos.forEach((photo, idx) => {
-        const card = document.createElement('div');
-        card.className = "glass p-5 rounded-[2.5rem] flex justify-between items-center animate-in cursor-pointer active:bg-white/5 transition-colors";
-        card.onclick = () => openPhotoViewer(idx);
-        card.innerHTML = `
-            <div class="flex items-center gap-4">
-                <div class="w-14 h-14 rounded-2xl overflow-hidden bg-slate-800">
-                    <img src="${photo.data}" class="w-full h-full object-cover">
-                </div>
-                <div>
-                    <h3 class="font-800 text-base text-amber-100">${photo.dateFormatted}</h3>
-                    <p class="text-xs font-black text-slate-500 uppercase mt-1 tracking-wider">Progress Photo</p>
-                </div>
+    container.innerHTML = photos.length ? photos.map((photo, idx) => `
+        <div class="card photo-card" onclick="openPhotoViewer(${idx})">
+            <img src="${photo.data}" class="thumb" alt="">
+            <div class="photo-info">
+                <h3 class="photo-title">${esc(photo.dateFormatted)}</h3>
+                <p class="card-sub">Progress Photo</p>
             </div>
-            <button onclick="event.stopPropagation(); deleteProgressPhoto(${photo.id})" class="p-3 bg-white/5 rounded-2xl text-slate-500 hover:text-red-400 transition-colors">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
+            <button class="icon-btn" onclick="event.stopPropagation(); deleteProgressPhoto(${photo.id})" aria-label="Delete photo">
+                <i data-lucide="trash-2"></i>
             </button>
-        `;
-        container.appendChild(card);
-    });
+        </div>
+    `).join('') : `<div class="empty">No progress photos yet.</div>`;
     lucide.createIcons();
 }
 
@@ -496,8 +482,7 @@ function openPhotoViewer(index) {
 
     currentViewerIndex = index;
     updateViewerDisplay();
-    document.getElementById('modal-photo-viewer').classList.remove('hidden');
-    lucide.createIcons();
+    openLayer('modal-photo-viewer');
 }
 
 function updateViewerDisplay() {
@@ -524,7 +509,7 @@ function navigatePhoto(direction) {
 
 function closePhotoViewer() {
     resetPhotoZoom();
-    document.getElementById('modal-photo-viewer').classList.add('hidden');
+    closeLayer('modal-photo-viewer');
 }
 
 // --- PHOTO ZOOM FUNCTIONALITY (Free Pan/Zoom) ---

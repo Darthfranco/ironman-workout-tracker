@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#131313">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
@@ -15,184 +15,146 @@
     <link rel="apple-touch-icon" href="image/152.png" sizes="152x152"> <!-- Older iPads -->
     <link rel="apple-touch-icon" href="image/120.png" sizes="120x120"> <!-- Older iPhones -->
     <!-- Pinned versions: keep these in sync with CDN_FILES in sw.js -->
-    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <script src="https://unpkg.com/lucide@1.67.0/dist/umd/lucide.min.js"></script>
     <link
-        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 
-<body class="pb-32">
+<body>
 
     <!-- HEADER -->
-    <header
-        class="p-4 pb-2 flex justify-between items-center sticky top-0 z-50 bg-black/90 backdrop-blur-xl border-b border-red-600/50"
-        style="padding-top: calc(env(safe-area-inset-top, 0px) + 1rem);">
-        <div class="flex flex-col items-center">
-            <img src="logo.png" alt="Ironman" class="h-12 cursor-pointer" onclick="playEasterEgg()">
-            <span class="text-[10px] font-600 text-slate-500 uppercase tracking-[0.2em]">Workout Tracker</span>
-        </div>
+    <header class="app-header">
+        <button class="brand" onclick="playEasterEgg()" aria-label="Iron Man">
+            <img src="image/reactor.png" alt="" class="reactor">
+            <img src="logo.png" alt="Iron Man" class="wordmark">
+        </button>
+        <span class="header-divider"></span>
+        <span class="header-subtitle">Workout Tracker</span>
     </header>
 
     <!-- VIEW: HOME (WORKOUTS) -->
-    <main id="view-home" class="p-5 space-y-6">
-        <div class="flex justify-between items-end px-1">
-            <h2 class="text-3xl text-amber-400 tracking-wide" style="font-family: 'Bebas Neue', sans-serif;">Workouts
-            </h2>
-            <button onclick="openWorkoutModal()"
-                class="text-sm font-800 text-red-500 bg-red-500/10 px-4 py-2 rounded-full uppercase tracking-wider active:scale-95 transition-all">+
-                New Workout</button>
+    <main id="view-home" class="view">
+        <div class="page-head">
+            <h1 class="page-title">Workouts</h1>
+            <button class="btn btn-red btn-small" onclick="openWorkoutModal()">
+                <i data-lucide="plus"></i>New Workout</button>
         </div>
-        <div id="workoutList" class="grid gap-4"></div>
+        <div id="workoutList" class="list"></div>
     </main>
 
     <!-- VIEW: LOGGER -->
-    <main id="view-log" class="hidden p-5 space-y-6">
-        <div class="flex items-center gap-4">
-            <button onclick="showView('home')" class="p-3 glass rounded-2xl"><i data-lucide="chevron-left"
-                    class="w-5 h-5"></i></button>
-            <h2 id="logWorkoutName" class="text-2xl font-800 truncate"></h2>
+    <main id="view-log" class="view view-log hidden">
+        <div class="log-head">
+            <button class="back-btn" onclick="showView('home')" aria-label="Back"><i data-lucide="chevron-left"></i></button>
+            <h1 id="logWorkoutName" class="page-title"></h1>
         </div>
-        <div id="movementLogs" class="space-y-6"></div>
-        <button onclick="finishSession()"
-            class="w-full bg-red-600 py-5 rounded-3xl font-800 text-base uppercase tracking-[0.2em] shadow-xl shadow-red-500/20 active:scale-[0.98] transition-all">Finish
-            & Save</button>
+        <div id="movementLogs" class="list"></div>
+        <button class="btn btn-red btn-finish" onclick="finishSession()">Finish &amp; Save</button>
+        <p class="credit">An IFNS Project</p>
     </main>
 
-    <!-- VIEW: ANALYTICS (NOW HISTORY VAULT) -->
-    <main id="view-stats" class="hidden p-5 space-y-6">
-        <div class="flex justify-between items-center px-1">
-            <h2 class="text-3xl text-amber-400 tracking-wide" style="font-family: 'Bebas Neue', sans-serif;">History
-            </h2>
-            <div id="historyCount"
-                class="text-xs font-black text-slate-500 bg-slate-500/10 px-3 py-1 rounded-full uppercase">0 Logs
-            </div>
+    <!-- VIEW: HISTORY -->
+    <main id="view-stats" class="view hidden">
+        <div class="page-head">
+            <h1 class="page-title">History</h1>
+            <span id="historyCount" class="count-pill">0 logs</span>
         </div>
-        <div id="historyList" class="space-y-4">
-            <!-- Sessions injected here -->
-        </div>
+        <div id="historyList" class="list"></div>
     </main>
 
     <!-- VIEW: PROGRESS PICTURES -->
-    <main id="view-progress" class="hidden p-5 space-y-6">
-        <div class="flex justify-between items-end px-1">
-            <h2 class="text-3xl text-amber-400 tracking-wide" style="font-family: 'Bebas Neue', sans-serif;">Progress
-            </h2>
-            <button onclick="openPhotoUpload()"
-                class="text-sm font-800 text-red-500 bg-red-500/10 px-4 py-2 rounded-full uppercase tracking-wider active:scale-95 transition-all">+
-                Add Photo</button>
+    <main id="view-progress" class="view hidden">
+        <div class="page-head">
+            <h1 class="page-title">Progress</h1>
+            <button class="btn btn-red btn-small" onclick="openPhotoUpload()">
+                <i data-lucide="plus"></i>Add Photo</button>
         </div>
-        <div id="progressList" class="space-y-4">
-            <!-- Progress pics injected here -->
-        </div>
+        <div id="progressList" class="list"></div>
     </main>
 
-    <!-- MODAL: PHOTO UPLOAD -->
-    <div id="modal-photo-upload"
-        class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-black/95 backdrop-blur-md hidden">
-        <div class="glass w-full max-w-md rounded-[3rem] p-8 space-y-5 mb-4 sm:mb-0 animate-in">
-            <h2 class="text-2xl font-800 text-amber-400">Add Progress Photo</h2>
-            <div class="space-y-5">
-                <div>
-                    <label class="text-xs font-black text-slate-500 uppercase ml-2">Date</label>
-                    <input type="date" id="photoDateInput"
-                        class="w-full bg-neutral-900 border border-white/10 rounded-2xl p-4 outline-none focus:border-red-500 font-600 mt-1 text-white">
-                </div>
-                <div>
-                    <label class="text-xs font-black text-slate-500 uppercase ml-2">Photo</label>
-                    <div id="photoPreviewContainer" class="mt-2 hidden">
-                        <img id="photoPreview" class="w-full rounded-2xl max-h-64 object-cover">
-                    </div>
-                    <label
-                        class="mt-2 w-full py-6 flex flex-col items-center justify-center border border-dashed border-red-500/20 rounded-2xl cursor-pointer hover:bg-red-500/5 transition-colors">
-                        <i data-lucide="camera" class="w-8 h-8 text-red-500 mb-2"></i>
-                        <span class="text-sm font-800 text-red-500 uppercase tracking-widest">Choose Photo</span>
-                        <input type="file" id="photoFileInput" accept="image/*" class="hidden"
-                            onchange="previewPhoto(this)">
-                    </label>
-                </div>
-            </div>
-            <div class="flex gap-3 pt-4">
-                <button onclick="closePhotoUpload()"
-                    class="flex-1 bg-neutral-800 py-4 rounded-2xl font-700 text-base">Cancel</button>
-                <button onclick="saveProgressPhoto()"
-                    class="flex-1 bg-red-600 py-4 rounded-2xl font-700 text-base shadow-lg shadow-red-500/20">Save</button>
+    <!-- SHEET: WORKOUT EDITOR -->
+    <div id="modal-workout" class="sheet-backdrop hidden">
+        <div class="sheet">
+            <div class="grabber"></div>
+            <h2 id="modalTitle" class="sheet-title">New Workout</h2>
+            <label class="field-label" for="workoutNameInput">Workout name</label>
+            <input type="text" id="workoutNameInput" class="text-field" placeholder="e.g. Push">
+            <div class="field-label">Movements</div>
+            <div id="movementInputsContainer" class="movement-rows"></div>
+            <button class="btn btn-gold" onclick="addMovementRow()"><i data-lucide="plus"></i>Add Movement</button>
+            <div class="sheet-actions">
+                <button class="btn btn-grey" onclick="closeWorkoutModal()">Cancel</button>
+                <button class="btn btn-red" onclick="handleWorkoutSave()">Save</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: PHOTO VIEWER -->
-    <div id="modal-photo-viewer"
-        class="fixed inset-0 z-[70] flex items-center justify-center bg-black/95 backdrop-blur-md hidden"
-        onclick="closePhotoViewer()">
-        <!-- Left Arrow -->
-        <button onclick="event.stopPropagation(); navigatePhoto(-1)" id="viewer-prev"
-            class="absolute left-4 z-10 p-3 glass-bright rounded-full text-slate-400 hover:text-white transition-colors">
-            <i data-lucide="chevron-left" class="w-6 h-6"></i>
-        </button>
+    <!-- SHEET: PHOTO UPLOAD -->
+    <div id="modal-photo-upload" class="sheet-backdrop hidden">
+        <div class="sheet">
+            <div class="grabber"></div>
+            <h2 class="sheet-title">Add Progress Photo</h2>
+            <label class="field-label" for="photoDateInput">Date</label>
+            <div class="date-field">
+                <input type="date" id="photoDateInput" class="text-field">
+                <i data-lucide="calendar"></i>
+            </div>
+            <div class="field-label">Photo</div>
+            <div id="photoPreviewContainer" class="photo-preview hidden">
+                <img id="photoPreview" alt="">
+            </div>
+            <label class="btn btn-gold">
+                <i data-lucide="camera"></i>Choose Photo
+                <input type="file" id="photoFileInput" accept="image/*" class="hidden" onchange="previewPhoto(this)">
+            </label>
+            <div class="sheet-actions">
+                <button class="btn btn-grey" onclick="closePhotoUpload()">Cancel</button>
+                <button class="btn btn-red" onclick="saveProgressPhoto()">Save</button>
+            </div>
+        </div>
+    </div>
 
-        <!-- Photo Container -->
-        <div id="photo-swipe-container" class="relative max-w-2xl w-full px-4" onclick="event.stopPropagation()">
-            <button onclick="closePhotoViewer()"
-                class="absolute -top-12 right-4 p-2 text-slate-400 hover:text-white transition-colors">
-                <i data-lucide="x" class="w-6 h-6"></i>
+    <!-- PHOTO VIEWER -->
+    <div id="modal-photo-viewer" class="viewer hidden" onclick="closePhotoViewer()">
+        <button class="viewer-close" onclick="event.stopPropagation(); closePhotoViewer()" aria-label="Close">
+            <i data-lucide="x"></i>
+        </button>
+        <div class="viewer-stage">
+            <button id="viewer-prev" class="viewer-arrow" onclick="event.stopPropagation(); navigatePhoto(-1)" aria-label="Previous photo">
+                <i data-lucide="chevron-left"></i>
             </button>
-            <img id="viewerPhoto" class="w-full rounded-3xl shadow-2xl transition-transform duration-200"
-                style="touch-action: manipulation; transform-origin: center center;">
-            <p id="viewerDate" class="text-center text-slate-500 text-base font-bold mt-4 uppercase tracking-widest">
-            </p>
-            <p id="viewerCounter" class="text-center text-slate-600 text-sm font-bold mt-2"></p>
+            <div id="photo-swipe-container" class="viewer-frame" onclick="event.stopPropagation()">
+                <img id="viewerPhoto" class="viewer-photo" alt="">
+            </div>
+            <button id="viewer-next" class="viewer-arrow" onclick="event.stopPropagation(); navigatePhoto(1)" aria-label="Next photo">
+                <i data-lucide="chevron-right"></i>
+            </button>
         </div>
-
-        <!-- Right Arrow -->
-        <button onclick="event.stopPropagation(); navigatePhoto(1)" id="viewer-next"
-            class="absolute right-4 z-10 p-3 glass-bright rounded-full text-slate-400 hover:text-white transition-colors">
-            <i data-lucide="chevron-right" class="w-6 h-6"></i>
-        </button>
+        <p id="viewerDate" class="viewer-date"></p>
+        <p id="viewerCounter" class="viewer-counter"></p>
     </div>
 
-    <!-- MODAL: WORKOUT EDITOR -->
-    <div id="modal-workout"
-        class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-black/95 backdrop-blur-md hidden">
-        <div
-            class="glass w-full max-w-md rounded-[3rem] p-8 space-y-5 mb-4 sm:mb-0 animate-in overflow-y-auto max-h-[90vh]">
-            <h2 id="modalTitle" class="text-2xl font-800 text-amber-400">New Workout</h2>
-            <div class="space-y-5">
-                <div>
-                    <label class="text-xs font-black text-slate-500 uppercase ml-2">Workout Name</label>
-                    <input type="text" id="workoutNameInput" placeholder="e.g. Upper Body"
-                        class="w-full bg-neutral-900 border border-white/10 rounded-2xl p-4 outline-none focus:border-red-500 font-600 mt-1 text-base">
-                </div>
-                <div id="movementInputsContainer" class="space-y-3"></div>
-                <button onclick="addMovementRow()"
-                    class="w-full py-4 text-sm font-800 text-red-500 uppercase tracking-widest border border-dashed border-red-500/20 rounded-2xl">+
-                    Add Movement</button>
-            </div>
-            <div class="flex gap-3 pt-4">
-                <button onclick="closeWorkoutModal()"
-                    class="flex-1 bg-neutral-800 py-4 rounded-2xl font-700 text-base">Cancel</button>
-                <button onclick="handleWorkoutSave()"
-                    class="flex-1 bg-red-600 py-4 rounded-2xl font-700 text-base shadow-lg shadow-red-500/20">Save</button>
-            </div>
-        </div>
+    <!-- BOTTOM BAR: tabs + credit -->
+    <div id="bottom-bar" class="bottom-bar">
+        <nav id="main-nav" class="tabbar">
+            <button onclick="showView('home')" id="nav-home" class="tab is-active">
+                <svg class="icon-barbell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 12h2M20 12h2M4 9v6M20 9v6M7 6v12M17 6v12M7 12h10" />
+                </svg>
+                <span>Workouts</span>
+            </button>
+            <button onclick="showView('progress')" id="nav-progress" class="tab">
+                <i data-lucide="camera"></i><span>Progress</span>
+            </button>
+            <button onclick="showView('stats')" id="nav-stats" class="tab">
+                <i data-lucide="clock"></i><span>History</span>
+            </button>
+        </nav>
+        <footer class="credit">An IFNS Project</footer>
     </div>
-
-    <!-- NAVIGATION -->
-    <nav id="main-nav"
-        class="fixed bottom-10 left-6 right-6 h-20 glass rounded-[2.5rem] flex items-center justify-around px-4 z-[50] shadow-2xl">
-        <button onclick="showView('home')" id="nav-home" class="p-4 tab-active transition-all"><i
-                data-lucide="dumbbell"></i></button>
-        <button onclick="showView('progress')" id="nav-progress" class="p-4 text-amber-600 transition-all"><i
-                data-lucide="camera"></i></button>
-        <button onclick="showView('stats')" id="nav-stats" class="p-4 text-amber-600 transition-all"><i
-                data-lucide="history"></i></button>
-    </nav>
-
-    <!-- FOOTER -->
-    <footer class="fixed bottom-2 left-0 right-0 text-center z-40">
-        <span class="text-[9px] font-500 text-slate-600 uppercase tracking-widest">An IFNS Project</span>
-    </footer>
 
     <script src="script.js"></script>
     <script>

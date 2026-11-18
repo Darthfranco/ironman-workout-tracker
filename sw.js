@@ -1,6 +1,6 @@
 // Change this only if you ever need every phone to throw away its saved copy.
 // Normal code changes don't need it: app files are fetched fresh whenever there's signal.
-const CACHE_NAME = 'ironman-v2';
+const CACHE_NAME = 'ironman-v3';
 
 // The app's own files. Paths are relative to this file, so the app works from any folder
 // (e.g. example.com/ or example.com/ironman/).
@@ -11,14 +11,14 @@ const APP_FILES = [
     './script.js',
     './manifest.json',
     './logo.png',
+    './image/reactor.png',
     './icon512_maskable.png'
 ];
 
 // Libraries from CDNs. These must match the URLs in index.html exactly.
 const CDN_FILES = [
-    'https://cdn.tailwindcss.com/3.4.17',
     'https://unpkg.com/lucide@1.67.0/dist/umd/lucide.min.js',
-    'https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap'
+    'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap'
 ];
 
 // With weak gym signal, show the saved copy instead of waiting longer than this.
