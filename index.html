@@ -9,14 +9,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon512_rounded.png">
     <title>Ironman Workout Tracker</title>
     <link rel="apple-touch-icon" href="image/180.png" sizes="180x180">
     <link rel="apple-touch-icon" href="image/167.png" sizes="167x167"> <!-- iPad Pro -->
     <link rel="apple-touch-icon" href="image/152.png" sizes="152x152"> <!-- Older iPads -->
     <link rel="apple-touch-icon" href="image/120.png" sizes="120x120"> <!-- Older iPhones -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Pinned versions: keep these in sync with CDN_FILES in sw.js -->
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script src="https://unpkg.com/lucide@1.67.0/dist/umd/lucide.min.js"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
@@ -199,7 +199,7 @@
         // Register Service Worker for offline support
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('sw.js')
                     .then((reg) => console.log('Service Worker registered:', reg.scope))
                     .catch((err) => console.log('Service Worker registration failed:', err));
             });
