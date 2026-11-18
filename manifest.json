@@ -1,0 +1,18 @@
+{
+    "name": "Ironman Workout Tracker",
+    "short_name": "IRONMAN",
+    "description": "Track your workouts with Iron Man",
+    "start_url": "/ironman/index.html",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#dc2626",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "icon512_maskable.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ]
+}
